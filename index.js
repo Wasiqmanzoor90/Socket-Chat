@@ -3,76 +3,62 @@ import dotenv from 'dotenv';
 import ConnectDb from './config/dbConnect.js';
 import cors from 'cors';
 import authRoute from './routes/authRoute.js';
+import http from 'http'; 
 import messageRoute from './routes/messageRoute.js';
 import userRoute from './routes/userRoute.js';
-import http from 'http';
-import { Server } from 'socket.io';
+import { Server } from 'socket.io'; // Import Server from socket.io
 import socketHandler from './socket/socketHandler.js';
 
-// Load environment variables
+
+// Suppress dotenv logs
 dotenv.config({ quiet: true });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB
+// Create HTTP server manually instead of using app.listen
+const server = http.createServer(app);
+
+//create a socket.io server
+const io = new Server(server,{
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+  
+  }
+})
+
+
+
+
+
+//connet to the database
 ConnectDb();
 
-// CORS Configuration
-const allowedOrigins = [
-  process.env.CLIENT_URL,           // From .env (Vercel frontend URL)
-  'http://localhost:3000'           // For local development
-];
 
+// Middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('Blocked CORS request from:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [
+    process.env.CLIENT_URL,            // For production (Vercel)
+    "http://localhost:3000"           // For local dev
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
-// Handle preflight OPTIONS requests
-app.options('*', cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-}));
 
-// Parse JSON bodies
-app.use(express.json());
 
-// Routes
+
+//Routes
 app.use('/api/auth', authRoute);
 app.use('/api/message', messageRoute);
 app.use('/api/users', userRoute);
 
-// Create HTTP server and attach Socket.io
-const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
+// Socket.io handler
+socketHandler(io); // Initialize socket handler
 
-// Initialize socket handlers
-socketHandler(io);
 
-// Start server
 server.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
