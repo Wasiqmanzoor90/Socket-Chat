@@ -5,7 +5,7 @@ import Register from './pages/user/register';
 import AllUser from './pages/messages/allUser';
 import Chat from './pages/messages/chat';
 import LandingPage from './pages/user/landingPage';
-//app
+//apps
 function App() {
   return (
     <BrowserRouter>
