@@ -9,7 +9,7 @@ export const checkAuth = (req,res)=>{
         res.status(200).json({
             success: true,
             user: req.user,
-            message: "User is authenticated",})
+            message: "User is authenticated sucessfully",})
 
     } catch (error) {
             res.status(401).json({
